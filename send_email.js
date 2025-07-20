@@ -1,27 +1,18 @@
-// Import required AWS SDK clients and commands for Pinpoint functionalities
-const { PinpointClient, SendMessagesCommand } = require("@aws-sdk/client-pinpoint");
+// Import required AWS SDK clients and commands for SES functionalities
+const { SESClient, SendEmailCommand } = require("@aws-sdk/client-ses");
 
 async function sendEmail(toAddress, params, errorCallback) {
-  const pinClient = new PinpointClient({ region: process.env.CURRENT_REGION });
-
-  const { MessageResponse } = await pinClient.send(
-    new SendMessagesCommand(params),
-  );
-
-  if (!MessageResponse) {
-    errorCallback(new Error("No message response."), 500);
-  }
-
-  if (!MessageResponse.Result) {
-    errorCallback(new Error("No message result."), 500);
-  }
-
-  const recipientResult = MessageResponse.Result[toAddress];
-
-  if (recipientResult.StatusCode !== 200) {
-    errorCallback(new Error(recipientResult.StatusMessage), 400);
-  } else {
-    return recipientResult;
+  const sesClient = new SESClient({ region: process.env.CURRENT_REGION });
+  try {
+    const command = new SendEmailCommand(params);
+    const response = await sesClient.send(command);
+    if (!response || !response.MessageId) {
+      errorCallback(new Error("No message response from SES."), 500);
+    } else {
+      return { MessageId: response.MessageId };
+    }
+  } catch (err) {
+    errorCallback(err, 500);
   }
 }
 
@@ -79,7 +70,6 @@ exports.handler = async function (event, context, callback) {
       });
 
     // The FromAddress must be verified in SES.
-    const projectId = process.env.PINPOINT_APP_ID;
     const fromAddress = process.env.FROM_EMAIL_ID;
 
     var httpMethod = getParamValue(event, "httpMethod", true, errorCallback);
@@ -97,30 +87,23 @@ exports.handler = async function (event, context, callback) {
     var charset = "UTF-8";
 
     const params = {
-      ApplicationId: projectId,
-      MessageRequest: {
-        Addresses: {
-          [toAddress]: {
-            ChannelType: "EMAIL",
-          },
+      Source: fromAddress,
+      Destination: {
+        ToAddresses: [toAddress],
+      },
+      Message: {
+        Subject: {
+          Data: subject,
+          Charset: charset,
         },
-        MessageConfiguration: {
-          EmailMessage: {
-            FromAddress: fromAddress,
-            SimpleEmail: {
-              Subject: {
-                Charset: charset,
-                Data: subject,
-              },
-              HtmlPart: {
-                Charset: charset,
-                Data: body,
-              },
-              TextPart: {
-                Charset: charset,
-                Data: body,
-              },
-            },
+        Body: {
+          Html: {
+            Data: body,
+            Charset: charset,
+          },
+          Text: {
+            Data: body,
+            Charset: charset,
           },
         },
       },
