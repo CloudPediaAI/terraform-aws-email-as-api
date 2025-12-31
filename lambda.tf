@@ -20,7 +20,7 @@ resource "aws_lambda_function" "send_email" {
 
   environment {
     variables = {
-      "CURRENT_REGION": data.aws_region.current.name,
+      "CURRENT_REGION": data.aws_region.current.region,
       "FROM_EMAIL_ID" : each.value.from_email
     }
   }

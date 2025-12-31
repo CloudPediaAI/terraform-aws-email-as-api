@@ -27,7 +27,7 @@ data "aws_iam_policy_document" "smtp_user_policy" {
     #   variable = "aws:SourceIp"
 
     #   values = [
-    #     data.aws_region.current.name
+    #     data.aws_region.current.region
     #   ]
     # }
   }
