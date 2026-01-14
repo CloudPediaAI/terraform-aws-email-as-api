@@ -77,3 +77,9 @@ variable "tags" {
     created_by = "Terraform Module CloudPediaAI/Messaging-as-API/aws"
   }
 }
+
+variable "cognito_user_pool_arns" {
+  type        = set(string)
+  default     = []
+  description = "List of the Amazon Cognito user pool ARNs to authenticate API endpoints"
+}

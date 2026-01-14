@@ -12,6 +12,8 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
+  auth_type       = (var.cognito_user_pool_arns != null && length(var.cognito_user_pool_arns) > 0) ? local.auth_types.COGNITO : local.auth_types.NONE
+
   # creating list of projects by avoiding invalid projects
   all_projects = {
     for key, project_info in var.projects : key => project_info if(project_info != null && project_info.channels != null)

@@ -155,12 +155,11 @@ resource "aws_api_gateway_base_path_mapping" "prod" {
   base_path   = var.api_version
 }
 
-# count         = (var.cognito_user_pool_arns != null && length(var.cognito_user_pool_arns) > 0) ? 1 : 0
-# resource "aws_api_gateway_authorizer" "cognito" {
-#   count = (local.auth_type == local.auth_types.COGNITO) ? 1 : 0
+resource "aws_api_gateway_authorizer" "cognito" {
+  count = (local.auth_type == local.auth_types.COGNITO) ? 1 : 0
 
-#   name          = "CognitoUserPoolAuthorizer"
-#   type          = local.auth_type
-#   rest_api_id   = aws_api_gateway_rest_api.main.id
-#   provider_arns = var.cognito_user_pool_arns
-# }
+  name          = "CognitoUserPoolAuthorizer"
+  type          = local.auth_type
+  rest_api_id   = aws_api_gateway_rest_api.messaging[0].id
+  provider_arns = var.cognito_user_pool_arns
+}

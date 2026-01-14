@@ -9,8 +9,9 @@ resource "aws_api_gateway_resource" "send_email" {
 resource "aws_api_gateway_method" "send_email_post" {
   for_each = aws_api_gateway_resource.send_email
 
-  authorization = local.auth_types.NONE
-  # authorizer_id = (local.auth_type == local.auth_types.COGNITO) ? aws_api_gateway_authorizer.cognito[0].id : null
+  authorization = local.auth_type
+  authorizer_id = (local.auth_type == local.auth_types.COGNITO) ? aws_api_gateway_authorizer.cognito[0].id : null
+
   http_method = local.http_methods.POST
   resource_id = each.value.id
   rest_api_id = aws_api_gateway_resource.project[each.key].rest_api_id
