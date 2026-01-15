@@ -57,7 +57,7 @@ exports.handler = async function (event, context, callback) {
   try {
     const successCallback = (results) => callback(null,
       {
-        isBase64Encoded: true,
+        isBase64Encoded: false,
         statusCode: 200,
         body: JSON.stringify(results),
         headers: {

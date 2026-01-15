@@ -1,9 +1,9 @@
 terraform {
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
-      version = "~> 6.0"
-      configuration_aliases = [aws.us-east-1, aws]      
+      source                = "hashicorp/aws"
+      version               = "~> 6.0"
+      configuration_aliases = [aws.us-east-1, aws]
     }
   }
 }
@@ -12,7 +12,7 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  auth_type       = (var.cognito_user_pool_arns != null && length(var.cognito_user_pool_arns) > 0) ? local.auth_types.COGNITO : local.auth_types.NONE
+  auth_type = (var.cognito_user_pool_arns != null && length(var.cognito_user_pool_arns) > 0) ? local.auth_types.COGNITO : local.auth_types.NONE
 
   # creating list of projects by avoiding invalid projects
   all_projects = {
@@ -54,10 +54,11 @@ locals {
   domain_provided      = (var.api_domain_name != "null")
   create_custom_domain = local.create_api_gateway && (local.hosted_zone_provided || local.domain_provided)
 
-  domain_name     = (local.create_custom_domain) ? ((local.domain_provided) ? lower(var.api_domain_name) : data.aws_route53_zone.by_id[0].name) : null
-  api_domain_name = (local.create_custom_domain) ? "${lower(var.api_name)}.${local.domain_name}" : null
-  custom_api_url  = (local.create_custom_domain) ? "https://${lower(var.api_name)}.${local.domain_name}/${var.api_version}" : null
-  api_base_url    = local.create_api_gateway ? ((local.create_custom_domain) ? local.custom_api_url : aws_api_gateway_stage.prod[0].invoke_url) : ""
+  domain_name        = (local.create_custom_domain) ? ((local.domain_provided) ? lower(var.api_domain_name) : data.aws_route53_zone.by_id[0].name) : null
+  api_subdomain_name = (var.api_subdomain_name != "") ? "${lower(var.api_subdomain_name)}" : "${lower(var.api_name)}"
+  api_domain_name    = (local.create_custom_domain) ? "${local.api_subdomain_name}.${local.domain_name}" : null
+  custom_api_url     = (local.create_custom_domain) ? "https://${local.api_subdomain_name}.${local.domain_name}/${var.api_version}" : null
+  api_base_url       = local.create_api_gateway ? ((local.create_custom_domain) ? local.custom_api_url : aws_api_gateway_stage.prod[0].invoke_url) : ""
 
   # preparing a list of send-email API endpoints
   api_endpoints_send_email = flatten([
