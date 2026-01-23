@@ -58,17 +58,6 @@ locals {
   api_subdomain_name = (var.api_subdomain_name != "") ? "${lower(var.api_subdomain_name)}" : "${lower(var.api_name)}"
   api_domain_name    = (local.create_custom_domain) ? "${local.api_subdomain_name}.${local.domain_name}" : null
   custom_api_url     = (local.create_custom_domain) ? "https://${local.api_subdomain_name}.${local.domain_name}/${var.api_version}" : null
-  api_base_url       = local.create_api_gateway ? ((local.create_custom_domain) ? local.custom_api_url : aws_api_gateway_stage.prod[0].invoke_url) : ""
-
-  # preparing a list of send-email API endpoints
-  api_endpoints_send_email = flatten([
-    for key, value in local.email_projects_need_api : {
-      "${key}" = {
-        "${key}-send-email" : "${local.api_base_url}${aws_api_gateway_resource.send_email[key].path}"
-      }
-    }
-    ]
-  )
 
   # preparing a list of register-number API endpoints
   # api_endpoints_register_number = flatten([
@@ -92,6 +81,20 @@ locals {
 
   # combining list of send-email and send-sms API endpoints
   # api_endpoints = concat(local.api_endpoints_send_email, local.api_endpoints_register_number, local.api_endpoints_send_sms)
-  api_endpoints = concat(local.api_endpoints_send_email)
+
+  allow_headers = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+  allow_methods = "'OPTIONS,POST'"
+
+  common_res_params = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+
+  common_res_params_responses = {
+    "method.response.header.Access-Control-Allow-Headers" = local.allow_headers,
+    "method.response.header.Access-Control-Allow-Methods" = local.allow_methods,
+    "method.response.header.Access-Control-Allow-Origin"  = var.cors_allowed_origins
+  }
 
 }

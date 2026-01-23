@@ -15,9 +15,11 @@ resource "aws_api_gateway_method" "send_email_post" {
   http_method = local.http_methods.POST
   resource_id = each.value.id
   rest_api_id = aws_api_gateway_resource.project[each.key].rest_api_id
+
+  depends_on = [aws_api_gateway_resource.send_email]
 }
 
-resource "aws_api_gateway_integration" "send_email_int" {
+resource "aws_api_gateway_integration" "send_email_post" {
   for_each = aws_api_gateway_method.send_email_post
 
   rest_api_id             = aws_api_gateway_rest_api.messaging[0].id
@@ -43,10 +45,11 @@ resource "aws_api_gateway_integration" "send_email_int" {
 EOF
   }
 
+  depends_on = [aws_api_gateway_method.send_email_post]
 }
 
-resource "aws_api_gateway_method_response" "send_email_post_res_200" {
-  for_each = aws_api_gateway_integration.send_email_int
+resource "aws_api_gateway_method_response" "send_email_post_200" {
+  for_each = aws_api_gateway_integration.send_email_post
 
   rest_api_id = aws_api_gateway_rest_api.messaging[0].id
   resource_id = aws_api_gateway_resource.send_email[each.key].id
@@ -54,60 +57,56 @@ resource "aws_api_gateway_method_response" "send_email_post_res_200" {
   status_code = "200"
 
   //cors section
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = true,
-    "method.response.header.Access-Control-Allow-Methods" = true,
-    "method.response.header.Access-Control-Allow-Origin"  = true
-  }
+  response_parameters = local.common_res_params
+
+  depends_on = [ aws_api_gateway_method.send_email_post ]
 }
 
-resource "aws_api_gateway_integration_response" "send_email_int_res_200" {
-  for_each = aws_api_gateway_method_response.send_email_post_res_200
+resource "aws_api_gateway_integration_response" "send_email_post_200" {
+  for_each = aws_api_gateway_method_response.send_email_post_200
 
   rest_api_id = aws_api_gateway_rest_api.messaging[0].id
   resource_id = aws_api_gateway_resource.send_email[each.key].id
   http_method = each.value.http_method
-  status_code = aws_api_gateway_method_response.send_email_post_res_200[each.key].status_code
+  status_code = aws_api_gateway_method_response.send_email_post_200[each.key].status_code
 
   //cors
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
-    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT'",
-    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
-  }
+  response_parameters = local.common_res_params_responses
 
-#   response_templates = {
-#     "application/json" = <<EOF
-# #set($inputRoot = $input.path('$'))
-# {
-#     errorMessage: $inputRoot.body;
-# }
-# EOF
-#   }
+  #   response_templates = {
+  #     "application/json" = <<EOF
+  # #set($inputRoot = $input.path('$'))
+  # {
+  #     errorMessage: $inputRoot.body;
+  # }
+  # EOF
+  #   }
 
   depends_on = [
     aws_api_gateway_method.send_email_post,
-    aws_api_gateway_integration.send_email_int
+    aws_api_gateway_integration.send_email_post
   ]
 }
 
-resource "aws_api_gateway_method_response" "send_email_post_res_400" {
-  for_each = aws_api_gateway_integration.send_email_int
+resource "aws_api_gateway_method_response" "send_email_post_400" {
+  for_each = aws_api_gateway_integration.send_email_post
 
   rest_api_id = aws_api_gateway_rest_api.messaging[0].id
   resource_id = aws_api_gateway_resource.send_email[each.key].id
   http_method = each.value.http_method
   status_code = "400"
+
+  depends_on = [ aws_api_gateway_method.send_email_post ]
 }
 
-resource "aws_api_gateway_integration_response" "send_email_int_res_400" {
-  for_each = aws_api_gateway_method_response.send_email_post_res_400
+resource "aws_api_gateway_integration_response" "send_email_post_400" {
+  for_each = aws_api_gateway_method_response.send_email_post_400
 
   selection_pattern = ".*\"errorCode\":400.*"
   rest_api_id       = aws_api_gateway_rest_api.messaging[0].id
   resource_id       = aws_api_gateway_resource.send_email[each.key].id
   http_method       = each.value.http_method
-  status_code       = aws_api_gateway_method_response.send_email_post_res_400[each.key].status_code
+  status_code       = aws_api_gateway_method_response.send_email_post_400[each.key].status_code
 
   response_templates = {
     "application/json" = "$input.path('$.errorMessage')"
@@ -115,28 +114,30 @@ resource "aws_api_gateway_integration_response" "send_email_int_res_400" {
 
   depends_on = [
     aws_api_gateway_method.send_email_post,
-    aws_api_gateway_integration.send_email_int
+    aws_api_gateway_integration.send_email_post
   ]
 }
 
 
-resource "aws_api_gateway_method_response" "send_email_post_res_500" {
-  for_each = aws_api_gateway_integration.send_email_int
+resource "aws_api_gateway_method_response" "send_email_post_500" {
+  for_each = aws_api_gateway_integration.send_email_post
 
   rest_api_id = aws_api_gateway_rest_api.messaging[0].id
   resource_id = aws_api_gateway_resource.send_email[each.key].id
   http_method = each.value.http_method
   status_code = "500"
+
+  depends_on = [ aws_api_gateway_method.send_email_post ]
 }
 
-resource "aws_api_gateway_integration_response" "send_email_int_res_500" {
-  for_each = aws_api_gateway_method_response.send_email_post_res_500
+resource "aws_api_gateway_integration_response" "send_email_post_500" {
+  for_each = aws_api_gateway_method_response.send_email_post_500
 
   selection_pattern = ".*\"errorCode\":500.*"
   rest_api_id       = aws_api_gateway_rest_api.messaging[0].id
   resource_id       = aws_api_gateway_resource.send_email[each.key].id
   http_method       = each.value.http_method
-  status_code       = aws_api_gateway_method_response.send_email_post_res_500[each.key].status_code
+  status_code       = aws_api_gateway_method_response.send_email_post_500[each.key].status_code
 
   response_templates = {
     "application/json" = "$input.path('$.errorMessage')"
@@ -144,7 +145,7 @@ resource "aws_api_gateway_integration_response" "send_email_int_res_500" {
 
   depends_on = [
     aws_api_gateway_method.send_email_post,
-    aws_api_gateway_integration.send_email_int
+    aws_api_gateway_integration.send_email_post
   ]
 }
 

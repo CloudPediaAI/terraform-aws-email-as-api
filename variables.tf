@@ -97,3 +97,9 @@ variable "cognito_user_pool_arns" {
   default     = []
   description = "List of the Amazon Cognito user pool ARNs to authenticate API endpoints"
 }
+
+variable "cors_allowed_origins" {
+  description = "CORS allowed origins for the API Gateway"
+  type        = string
+  default     = "'*'"
+}

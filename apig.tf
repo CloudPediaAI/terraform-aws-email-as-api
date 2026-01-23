@@ -1,9 +1,10 @@
 locals {
   http_methods = {
-    GET    = "GET",
-    POST   = "POST",
-    PUT    = "PUT",
-    DELETE = "DELETE"
+    GET     = "GET",
+    POST    = "POST",
+    PUT     = "PUT",
+    DELETE  = "DELETE",
+    OPTIONS = "OPTIONS"
   }
 
   integration_types = {
@@ -48,69 +49,113 @@ locals {
   ])
 
   api_method_ids = flatten([
-    for key, value in aws_api_gateway_method.send_email_post : [
-      {
-        id = aws_api_gateway_method.send_email_post[key].id
-      }
+    [
+      for key, value in aws_api_gateway_method.send_email_post : [
+        {
+          id = aws_api_gateway_method.send_email_post[key].id
+        }
+      ]
+    ],
+    [
+      for key, value in aws_api_gateway_method.send_email_options : [
+        {
+          id = aws_api_gateway_method.send_email_options[key].id
+        }
+      ]
     ]
   ])
 
   api_integration_ids = flatten([
-    for key, value in aws_api_gateway_integration.send_email_int : [
-      {
-        id = aws_api_gateway_integration.send_email_int[key].id
-      }
+    [
+      for key, value in aws_api_gateway_integration.send_email_post : [
+        {
+          id = aws_api_gateway_integration.send_email_post[key].id
+        }
+      ]
+    ],
+    [
+      for key, value in aws_api_gateway_integration.send_email_options : [
+        {
+          id = aws_api_gateway_integration.send_email_options[key].id
+        }
+      ]
     ]
   ])
 
   api_method_response_200_ids = flatten([
-    for key, value in aws_api_gateway_method_response.send_email_post_res_200 : [
-      {
-        id = aws_api_gateway_method_response.send_email_post_res_200[key].id
-      }
+    [
+      for key, value in aws_api_gateway_method_response.send_email_post_200 : [
+        {
+          id = aws_api_gateway_method_response.send_email_post_200[key].id
+        }
+      ]
+    ],
+    [
+      for key, value in aws_api_gateway_method_response.send_email_options_200 : [
+        {
+          id = aws_api_gateway_method_response.send_email_options_200[key].id
+        }
+      ]
     ]
   ])
 
   api_method_response_400_ids = flatten([
-    for key, value in aws_api_gateway_method_response.send_email_post_res_400 : [
+    for key, value in aws_api_gateway_method_response.send_email_post_400 : [
       {
-        id = aws_api_gateway_method_response.send_email_post_res_400[key].id
+        id = aws_api_gateway_method_response.send_email_post_400[key].id
       }
     ]
   ])
 
   api_method_response_500_ids = flatten([
-    for key, value in aws_api_gateway_method_response.send_email_post_res_500 : [
+    for key, value in aws_api_gateway_method_response.send_email_post_500 : [
       {
-        id = aws_api_gateway_method_response.send_email_post_res_500[key].id
+        id = aws_api_gateway_method_response.send_email_post_500[key].id
       }
     ]
   ])
 
   api_integration_response_200_ids = flatten([
-    for key, value in aws_api_gateway_integration_response.send_email_int_res_200 : [
-      {
-        id = aws_api_gateway_integration_response.send_email_int_res_200[key].id
-      }
+    [
+      for key, value in aws_api_gateway_integration_response.send_email_post_200 : [
+        {
+          id = aws_api_gateway_integration_response.send_email_post_200[key].id
+        }
+      ]
+    ],
+    [
+      for key, value in aws_api_gateway_integration_response.send_email_options_200 : [
+        {
+          id = aws_api_gateway_integration_response.send_email_options_200[key].id
+        }
+      ]
     ]
   ])
 
   api_integration_response_400_ids = flatten([
-    for key, value in aws_api_gateway_integration_response.send_email_int_res_400 : [
+    for key, value in aws_api_gateway_integration_response.send_email_post_400 : [
       {
-        id = aws_api_gateway_integration_response.send_email_int_res_400[key].id
+        id = aws_api_gateway_integration_response.send_email_post_400[key].id
       }
     ]
   ])
 
   api_integration_response_500_ids = flatten([
-    for key, value in aws_api_gateway_integration_response.send_email_int_res_500 : [
+    for key, value in aws_api_gateway_integration_response.send_email_post_500 : [
       {
-        id = aws_api_gateway_integration_response.send_email_int_res_500[key].id
+        id = aws_api_gateway_integration_response.send_email_post_500[key].id
       }
     ]
   ])
 
+}
+
+locals {
+  resources_changed = flatten([
+    length(local.api_resource_ids) > 0 ? local.api_resource_ids : [],
+    length(local.api_method_ids) > 0 ? local.api_method_ids : [],
+    length(local.api_integration_ids) > 0 ? local.api_integration_ids : [],
+  ])
 }
 
 resource "aws_api_gateway_deployment" "main_deploy" {
@@ -119,23 +164,23 @@ resource "aws_api_gateway_deployment" "main_deploy" {
   rest_api_id = aws_api_gateway_rest_api.messaging[0].id
 
   triggers = {
-    # NOTE: The configuration below will satisfy ordering considerations,
-    #       but not pick up all future REST API changes. More advanced patterns
-    #       are possible, such as using the filesha1() function against the
-    #       Terraform configuration file(s) or removing the .id references to
-    #       calculate a hash against whole resources. Be aware that using whole
-    #       resources will show a difference after the initial implementation.
-    #       It will stabilize to only change when resources change afterwards.
-    redeployment = sha1(jsonencode([
-      local.api_resource_ids,
-      local.api_method_ids, local.api_method_response_200_ids, local.api_method_response_400_ids, local.api_method_response_500_ids,
-      local.api_integration_ids, local.api_integration_response_200_ids, local.api_integration_response_200_ids, local.api_integration_response_200_ids,
-    ]))
+    # NOTE: Only include basic API structure elements to avoid cycles
+    # Integration responses are excluded to prevent circular dependencies
+    redeployment = sha1(jsonencode(local.resources_changed))
   }
 
   lifecycle {
     create_before_destroy = true
   }
+
+  depends_on = [
+    aws_api_gateway_resource.project,
+    aws_api_gateway_resource.send_email,
+    aws_api_gateway_method.send_email_post,
+    aws_api_gateway_method.send_email_options,
+    aws_api_gateway_integration.send_email_post,
+    aws_api_gateway_integration.send_email_options,
+  ]
 }
 
 resource "aws_api_gateway_stage" "prod" {
@@ -144,6 +189,10 @@ resource "aws_api_gateway_stage" "prod" {
   deployment_id = aws_api_gateway_deployment.main_deploy[0].id
   rest_api_id   = aws_api_gateway_rest_api.messaging[0].id
   stage_name    = "prod_${var.api_version}"
+
+  depends_on = [
+    aws_api_gateway_deployment.main_deploy
+  ]
 }
 
 resource "aws_api_gateway_base_path_mapping" "prod" {
@@ -155,11 +204,21 @@ resource "aws_api_gateway_base_path_mapping" "prod" {
   base_path   = var.api_version
 }
 
-resource "aws_api_gateway_authorizer" "cognito" {
-  count = (local.auth_type == local.auth_types.COGNITO) ? 1 : 0
+locals {
+  api_base_url = local.create_api_gateway ? ((local.create_custom_domain) ? local.custom_api_url : aws_api_gateway_stage.prod[0].invoke_url) : ""
+  # preparing a list of send-email API endpoints
+  api_endpoints_send_email = flatten([
+    for key, value in local.email_projects_need_api : {
+      "${key}" = {
+        "${key}-send-email" : "${local.api_base_url}${aws_api_gateway_resource.send_email[key].path}"
+      }
+    }
+    ]
+  )
+  api_endpoints = concat(local.api_endpoints_send_email)
+}
 
-  name          = "CognitoUserPoolAuthorizer"
-  type          = local.auth_type
-  rest_api_id   = aws_api_gateway_rest_api.messaging[0].id
-  provider_arns = var.cognito_user_pool_arns
+output "api_endpoints" {
+  value       = local.api_endpoints
+  description = "List of API endpoints created for messaging services"
 }
