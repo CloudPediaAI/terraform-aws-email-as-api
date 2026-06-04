@@ -9,15 +9,25 @@ This terraform module will create a REST API to send Emails using Amazon SES.  Y
 - [GitHub Repo](https://github.com/CloudPediaAI/terraform-aws-email-as-api)
 
 
-## Latest Release - v1.2.4
+## Latest Release - v1.2.5
 
 ### 🚀 What's New
-- **Fixed Critical Terraform Cycle Issues**: Resolved API Gateway dependency conflicts that prevented clean deployments
-- **Enhanced CORS Support**: Added configurable CORS origins for better security and flexibility  
-- **Improved Resource Management**: Streamlined dependency chains for more reliable deployments
-- **Better Code Organization**: Separated concerns with dedicated files for auth and CORS handling
+- **Optional SMTP IAM Condition**: SMTP user policy `condition` is now only added when `smtp_user_allow_condition` is set (non-null)
+- **Input Fix**: Standardized the variable name to `smtp_user_allow_condition` and made it a structured object (`test`, `variable`, `values`)
 
 See [CHANGELOG.md](CHANGELOG.md) for complete details.
+
+### SMTP policy condition (optional)
+If you enable `need_smtp_user`, you can optionally restrict the SMTP IAM user policy with `smtp_user_allow_condition`. Leave it unset / `null` to omit the condition block.
+
+Example:
+```hcl
+smtp_user_allow_condition = {
+	test     = "IpAddress"
+	variable = "aws:SourceIp"
+	values   = ["9.9.9.9/32"]
+}
+```
 
 ## v1.0.0 
 Initial release features:

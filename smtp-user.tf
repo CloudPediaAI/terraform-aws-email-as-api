@@ -22,14 +22,15 @@ data "aws_iam_policy_document" "smtp_user_policy" {
 
     resources = var.smtp_user_allow_resources
 
-    # condition {
-    #   test     = "StringEquals"
-    #   variable = "aws:SourceIp"
+    dynamic "condition" {
+      for_each = var.smtp_user_allow_condition == null ? [] : [var.smtp_user_allow_condition]
+      content {
+        test     = condition.value.test
+        variable = condition.value.variable
+        values   = condition.value.values
+      }
+    }
 
-    #   values = [
-    #     data.aws_region.current.region
-    #   ]
-    # }
   }
 }
 

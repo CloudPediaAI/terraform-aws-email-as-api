@@ -78,11 +78,15 @@ variable "smtp_user_allow_resources" {
   description = "List of resources (ARNs or IP Addresses) from where emails are sending using SMTP"
 }
 
-# variable "stmp_user_allow_condition" {
-#   type        = map(any)
-#   default     = {}
-#   description = "Condition to allow SMTP user to send emails from specific IP addresses"
-# }
+variable "smtp_user_allow_condition" {
+  type = object({
+    test     = string
+    variable = string
+    values   = list(string)
+  })
+  default     = null
+  description = "Optional IAM condition for SMTP user policy (e.g., restrict by SourceIp). Set to null to omit."
+}
 
 variable "tags" {
   type        = map(any)

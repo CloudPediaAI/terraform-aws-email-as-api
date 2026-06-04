@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.2.5] - 2026-06-03
+
+### 🐛 Fixed
+- Made the SMTP user IAM policy condition truly optional by rendering the `condition` block only when `smtp_user_allow_condition` is provided (non-null)
+
+### 🔧 Changed
+- Renamed the SMTP condition input variable from the misspelled `stmp_user_allow_condition` to `smtp_user_allow_condition`
+- Updated `smtp_user_allow_condition` to a structured object (`test`, `variable`, `values`) and made it nullable (default `null`)
+
+### ⚠️ Upgrade Notes
+- If you previously set `stmp_user_allow_condition`, rename it to `smtp_user_allow_condition` and provide keys: `test`, `variable`, `values`
+
 ## [v1.2.4] - 2026-01-22
 
 ### 🐛 Fixed
